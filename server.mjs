@@ -226,6 +226,15 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
   const url = (req.url || "").split("?")[0];
   try {
+    if (url === "/api/providers") return json(res, 200, { providers: Object.entries(GROUPS).map(([id, g]) => ({ id, name: g.label || id, type: g.type, models: g.modelCount, enabled: g.enabled, live: g.live, key: g.key ? g.key.slice(0, 4) + "..." + g.key.slice(-4) : "", base: g.baseURL || g.endpoint || "", healthInfo: g.healthInfo || null })) });
+    if (url === "/api/usage") return json(res, 200, statsPayload());
+    if (url === "/api/usage/requests") return json(res, 200, { rows: STATS.requests.slice(0, 50) });
+    if (url === "/api/state") return json(res, 200, { groups: GROUPS, stats: statsPayload() });
+    if (url === "/api/requests.csv" || url === "/api/usage/requests.csv") {
+      const cols = ["time", "agent", "group", "model", "actual", "in", "out", "ms", "speed", "cost", "ok"];
+      const csv = [cols.join(",")].concat(STATS.requests.map(r => cols.map(c => JSON.stringify(r[c] == null ? "" : r[c])).join(","))).join("\n");
+      res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": "attachment; filename=requests.csv" }); return res.end(csv);
+    }
     if (url === "/api/status") return json(res, 200, { groups: GROUPS });
     if (url === "/api/models") return json(res, 200, { object: "list", data: allModels() });
     if (url === "/api/stats") return json(res, 200, statsPayload());
@@ -255,8 +264,9 @@ const server = http.createServer(async (req, res) => {
       try {
         if (m.builtin) out = m.group === "quark" ? await quarkChat(prompt, m.up) : await yuanbaoChat(prompt, m.up);
         else out = await upstreamChat(m.g, body, m.up || m.id.split("/").slice(1).join("/"));
-      } catch (e) { record({ time: new Date().toISOString().slice(11, 19), group: m.group, model: m.id, actual: m.up || m.id, in: estTokens(prompt), out: 0, ms: Date.now() - t0, ok: false, stream: !!body.stream }); throw e; }
-      record({ time: new Date().toISOString().slice(11, 19), group: m.group, model: m.id, actual: m.up || m.id, in: estTokens(prompt), out: estTokens(out.answer), ms: Date.now() - t0, ok: true, stream: !!body.stream });
+      } catch (e) { record({ time: new Date().toISOString().slice(11, 19), agent: (body.user || req.headers["x-agent"] || "unknown"), group: m.group, provider: m.group, model: m.id, actual: m.up || m.id, in: estTokens(prompt), out: 0, ms: Date.now() - t0, ok: false, stream: !!body.stream, cost: 0, ttft: 0, speed: 0 }); throw e; }
+      const _ms = Date.now() - t0, _in = estTokens(prompt), _out = estTokens(out.answer);
+      record({ time: new Date().toISOString().slice(11, 19), agent: (body.user || req.headers["x-agent"] || "unknown"), group: m.group, provider: m.group, model: m.id, actual: m.up || m.id, in: _in, out: _out, ms: _ms, ok: true, stream: !!body.stream, cost: 0, ttft: 0, speed: Math.round(_out / Math.max(1, _ms / 1000)) });
       const id = "chatcmpl-" + Date.now().toString(36); const created = Math.floor(Date.now() / 1000);
       const usage = out.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
       if (body.stream) {

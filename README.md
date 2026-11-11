@@ -82,3 +82,24 @@ curl -X POST http://127.0.0.1:8976/v1/chat/completions -H "Content-Type: applica
 私有仓库：https://github.com/laolaola278-dev/browser-ai-proxy
 
 `config.json`（含设备 ut）与 `ticket.json` 已被 `.gitignore` 排除，仓库只含 `config.example.json` 模板。
+
+## 上游注意事项（实测 + 两路调研）
+
+- **DeepSeek 网页版代理**（`deepseek-web`，18088）：14 个模型，OpenAI 兼容，含私有 `reasoning_content` / `tool_calls`；上游靠 `userToken` + did + PoW。当前 `health.token_status = expired`（实测 chat 401），且调研记录 2026-11-09 起账号被封 9 天 → **高风险，不要设为默认**（本项目 `defaultProvider` 保持 `quark`）。恢复需重新登录 chat.deepseek.com 或 POST `/_set_token`。
+- **Duck2API 网关**（`duck`，7749）：仅 `GET /`、`/health`、`/v1/models`、`POST /v1/chat/completions` 等 5 个端点；模型目录动态（上游 30 分钟缓存，失败回落 `models-extracted.json`），纯文本、不支持图片/联网；上游靠 `X-Vqd-Hash-1` 挑战；451 需海外出口（自动切系统代理 12000）。本地 curl 需 `--noproxy "*"`，Node fetch 直连 127.0.0.1 无需代理。
+- **GitHub 仓库澄清**：`laolaola278-dev/DeepSeekWebProxy`（私有）与本地 18088 项目一致；但 `laolaola278-dev/duck2api-pro` 是**另一个更新的项目**（主程序 `duck2api_pro_proxy.py`、默认端口 7750、身份池、`/v1/responses|messages|images/generations`），**不是** 7749 部署的网关。7749 的源码在本机 `E:\hds(js)\look\duck-apk`。接入时不要按 7750 项目给 7749 配端点。
+
+## 面板 v2（对齐喜鹊真实布局）
+
+调研结论：3425 的 magpie 面板是 Wails/WebView2 桌面窗口（前端明文在 `E:\project\喜鹊\magpie-main\internal\gui\assets\`），不是 HTTP 前端站点；配色 `--accent:#4f46e5` / `--bg:#f4f4f6` / 暗色 `#1a1a1e`。本面板据此做了：
+
+- 侧栏分组：模型（供应商/路由/网关）· 观测（用量）· 扩展（插件），底部网关状态灯
+- 供应商行：图标 + 名称徽章 + `域名 · N models` + 脱敏 key 药丸 + 在线灯 + 开关 + 展开箭头（健康检查 / 启动脚本 / 启动按钮 / token 过期红标）
+- 路由页：SVG 三层拓扑（Agent → 网关 → 各分组节点，带连线）+ 路由策略卡（智能/顺序/权重/最少使用/手动/按意图）
+- 用量页：概览 / 请求 双页签、4 列 KPI、按分组柱状图、按模型折叠排行、16 列请求表（Time/Agent/Requested/Provider·account/Sent/Served/Effort/In/Out/Cache/Cost/TTFT/Duration/Speed/Status）、CSV 导出、53 周热力图、耗时色（≤10s 绿 / 10–30s 琥珀 / >30s 红）
+- 亮/暗主题切换、`tabular-nums`、12px 卡片 / 999px 药丸 / 8px 分段控件
+- 兼容 API 别名：`/api/providers`、`/api/state`、`/api/usage`、`/api/usage/requests`、`/api/requests.csv`（同时保留 `/api/status`、`/api/stats`、`/api/requests`）
+
+## 调研资料（未纳入本仓库）
+
+`E:\hds(js)\look\qq-re\research\gateways.md`（23KB / 两网关 7 节规格）、`magpie-ui.md`（26.6KB / 296 行，含 HTML/CSS 片段）、`evidence\`（29 个文件 / 32 条编号证据）。
