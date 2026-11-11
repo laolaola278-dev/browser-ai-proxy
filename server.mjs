@@ -269,7 +269,7 @@ const server = http.createServer(async (req, res) => {
       try { const f = fs.readFileSync(path.join(HERE, "panel.html")); res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(f); }
       catch (e) { return fail(res, 500, e.message); }
     }
-    if (req.method === "GET" && url === "/health") return json(res, 200, { ok: true, port: PORT, providers: ["quark", "yuanbao"], models: MODELS.length, browserRequired: false, ticketRefreshRequired: false });
+    if (req.method === "GET" && url === "/health") return json(res, 200, { ok: true, port: PORT, providers: Object.keys(GROUPS), models: allModels().length, browserRequired: false, ticketRefreshRequired: false });
     if (req.method === "GET" && (url === "/v1/models" || url === "/models")) return json(res, 200, { object: "list", data: MODELS.map(m => ({ id: m.id, object: "model", owned_by: m.group, name: m.name })) });
     if (req.method === "POST" && (url === "/v1/chat/completions" || url === "/chat/completions")) {
       const raw = await readBody(req); let body = {}; try { body = JSON.parse(raw || "{}"); } catch (e) { return fail(res, 400, "invalid JSON body"); }
@@ -296,5 +296,5 @@ const server = http.createServer(async (req, res) => {
     return fail(res, 404, "not found: " + url);
   } catch (e) { log("request failed:", e.message); return fail(res, 502, e.message); }
 });
-server.listen(PORT, "127.0.0.1", () => { log("Unified Browser-AI proxy ready at http://127.0.0.1:" + PORT); log("providers: quark (6 models) + yuanbao (13 models) | GET /v1/models | POST /v1/chat/completions"); });
+server.listen(PORT, "127.0.0.1", () => { log("Unified Browser-AI proxy ready at http://127.0.0.1:" + PORT); log("groups: " + Object.keys(GROUPS).join(", ") + " | GET /v1/models | POST /v1/chat/completions"); });
 process.on("SIGINT", () => { log("stopping"); server.close(() => process.exit(0)); });

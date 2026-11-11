@@ -16,7 +16,7 @@ netstat -ano | findstr ":8976" | findstr LISTENING >nul 2>&1
 if errorlevel 1 (
   echo [1/3] Starting unified gateway ...
   start "BrowserAI-Gateway" /min "%NODE%" "%ROOT%\server.mjs"
-  timeout /t 5 >nul
+  ping -n 6 127.0.0.1 >nul 2>&1
 ) else (
   echo [1/3] Unified gateway already running.
 )
