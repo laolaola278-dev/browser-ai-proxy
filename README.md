@@ -79,15 +79,17 @@ curl -X POST http://127.0.0.1:8976/v1/chat/completions -H "Content-Type: applica
 
 ## GitHub
 
-私有仓库：https://github.com/laolaola278-dev/browser-ai-proxy
+公开仓库：https://github.com/laolaola278-dev/browser-ai-proxy
 
 `config.json`（含设备 ut）与 `ticket.json` 已被 `.gitignore` 排除，仓库只含 `config.example.json` 模板。
+
+安全说明：本仓库**不含任何真实 API Key / Token / 设备标识 / WG 票据**；元宝分组的设备指纹为运行时随机生成，夸克分组的 `ut` 只从被忽略的本地 `config.json` 读取。所有鉴权值都不在版本控制中。
 
 ## 上游注意事项（实测 + 两路调研）
 
 - **DeepSeek 网页版代理**（`deepseek-web`，18088）：14 个模型，OpenAI 兼容，含私有 `reasoning_content` / `tool_calls`；上游靠 `userToken` + did + PoW。当前 `health.token_status = expired`（实测 chat 401），且调研记录 2026-11-09 起账号被封 9 天 → **高风险，不要设为默认**（本项目 `defaultProvider` 保持 `quark`）。恢复需重新登录 chat.deepseek.com 或 POST `/_set_token`。
 - **Duck2API 网关**（`duck`，7749）：仅 `GET /`、`/health`、`/v1/models`、`POST /v1/chat/completions` 等 5 个端点；模型目录动态（上游 30 分钟缓存，失败回落 `models-extracted.json`），纯文本、不支持图片/联网；上游靠 `X-Vqd-Hash-1` 挑战；451 需海外出口（自动切系统代理 12000）。本地 curl 需 `--noproxy "*"`，Node fetch 直连 127.0.0.1 无需代理。
-- **GitHub 仓库澄清**：`laolaola278-dev/DeepSeekWebProxy`（私有）与本地 18088 项目一致；但 `laolaola278-dev/duck2api-pro` 是**另一个更新的项目**（主程序 `duck2api_pro_proxy.py`、默认端口 7750、身份池、`/v1/responses|messages|images/generations`），**不是** 7749 部署的网关。7749 的源码在本机 `E:\hds(js)\look\duck-apk`。接入时不要按 7750 项目给 7749 配端点。
+- **GitHub 仓库澄清**：`laolaola278-dev/DeepSeekWebProxy` 与本地 18088 项目一致；但 `laolaola278-dev/duck2api-pro` 是**另一个更新的项目**（主程序 `duck2api_pro_proxy.py`、默认端口 7750、身份池、`/v1/responses|messages|images/generations`），**不是** 7749 部署的网关。7749 的源码在本机 `E:\hds(js)\look\duck-apk`。接入时不要按 7750 项目给 7749 配端点。
 
 ## 面板 v2（对齐喜鹊真实布局）
 
