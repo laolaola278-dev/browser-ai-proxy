@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
 
 const NL = String.fromCharCode(10);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -105,6 +106,74 @@ async function yuanbaoChat(prompt, model) {
 }
 
 // ---------- model registry & routing ----------
+// ---------- grouped gateways, health, stats ----------
+const GROUPS = CFG.groups || {};
+for (const [k, g] of Object.entries(GROUPS)) { g.enabled = g.enabled !== false; g.live = false; g.modelCount = g.models || 0; g.modelCache = []; }
+const STATS = { startedAt: Date.now(), total: 0, ok: 0, fail: 0, sumMs: 0, tokens: 0, byGroup: {}, byModel: {}, buckets: {}, requests: [] };
+function estTokens(x) { return Math.max(0, Math.round(String(x == null ? "" : x).length / 4)); }
+function record(r) {
+  STATS.total++; if (r.ok) STATS.ok++; else STATS.fail++;
+  STATS.sumMs += r.ms || 0; STATS.tokens += (r.in || 0) + (r.out || 0);
+  STATS.byGroup[r.group] = (STATS.byGroup[r.group] || 0) + 1;
+  STATS.byModel[r.model] = (STATS.byModel[r.model] || 0) + 1;
+  const b = Math.floor(Date.now() / 60000) * 60000; STATS.buckets[b] = (STATS.buckets[b] || 0) + 1;
+  STATS.requests.unshift(r); if (STATS.requests.length > 200) STATS.requests.pop();
+}
+function upstreamHeaders(g) { const h = { "Content-Type": "application/json" }; if (g.key) h.Authorization = "Bearer " + g.key; return h; }
+async function checkGroup(id, g) {
+  if (g.type === "builtin") { g.live = true; return; }
+  try { const r = await fetch(g.health || (g.baseURL.replace(/\/v1$/, "") + "/health"), { signal: AbortSignal.timeout(2500) }); g.live = r.ok; try { g.healthInfo = await r.json(); } catch (e) {} } catch (e) { g.live = false; }
+  try {
+    const r = await fetch(g.baseURL.replace(/\/$/, "") + "/models", { headers: upstreamHeaders(g), signal: AbortSignal.timeout(4000) });
+    const j = await r.json(); const list = j.data || j.models || [];
+    g.modelCache = list.map(m => typeof m === "string" ? m : (m.id || m.name || "")).filter(Boolean);
+    g.modelCount = g.modelCache.length;
+  } catch (e) {}
+}
+function checkAll() { for (const [id, g] of Object.entries(GROUPS)) checkGroup(id, g).catch(() => {}); }
+checkAll(); setInterval(checkAll, 15000).unref();
+function allModels() {
+  let out = MODELS.map(m => ({ id: m.id, object: "model", owned_by: m.group, name: m.name, group: m.group }));
+  for (const [id, g] of Object.entries(GROUPS)) {
+    if (g.type === "builtin" || !g.enabled) continue;
+    for (const mid of g.modelCache) out.push({ id: id + "/" + mid, object: "model", owned_by: id, name: mid, group: id });
+  }
+  return out;
+}
+function statsPayload() {
+  const secs = Math.max(1, (Date.now() - STATS.startedAt) / 1000);
+  const heat = []; for (let i = 97; i >= 0; i--) { const b = Math.floor(Date.now() / 60000) * 60000 - i * 60000; heat.push(STATS.buckets[b] || 0); }
+  return { port: PORT, uptime: Math.round(secs) + "s", total: STATS.total, ok: STATS.ok, fail: STATS.fail,
+    tps: Math.round(STATS.tokens / secs), avgMs: STATS.total ? Math.round(STATS.sumMs / STATS.total) : 0,
+    byGroup: STATS.byGroup, byModel: STATS.byModel, heat, groups: Object.keys(GROUPS).length };
+}
+function parseUpstream(text, contentType) {
+  let answer = "", usage = null;
+  if ((contentType || "").indexOf("text/event-stream") >= 0 || text.indexOf("data:") === 0) {
+    for (const p of text.split(/\n\n/)) {
+      const line = p.split(/\n/).find(l => l.indexOf("data:") === 0); if (!line) continue;
+      const d = line.slice(5).trim(); if (d === "[DONE]") continue;
+      let j = null; try { j = JSON.parse(d); } catch (e) { continue; }
+      const c = j.choices && j.choices[0] && (j.choices[0].delta || j.choices[0].message);
+      if (c && typeof c.content === "string") answer += c.content;
+      if (j.usage) usage = j.usage;
+    }
+  } else {
+    let j = null; try { j = JSON.parse(text); } catch (e) {}
+    if (j) { const c = j.choices && j.choices[0] && j.choices[0].message; if (c) answer = c.content || ""; usage = j.usage || null; }
+    else answer = text.slice(0, 2000);
+  }
+  return { answer, usage };
+}
+async function upstreamChat(g, body, upModel) {
+  const url = g.baseURL.replace(/\/$/, "") + "/chat/completions";
+  const payload = Object.assign({}, body, { model: upModel, stream: false });
+  const r = await fetch(url, { method: "POST", headers: upstreamHeaders(g), body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) });
+  const text = await r.text();
+  if (!r.ok) throw new Error("UPSTREAM " + r.status + ": " + text.slice(0, 160));
+  const out = parseUpstream(text, r.headers.get("content-type"));
+  return { answer: out.answer, usage: out.usage, frames: 0, reqId: "" };
+}
 const MODELS = [
   { id: "quark/Qwen", provider: "quark", up: "Qwen", name: "夸克 Qwen-快速（默认）" },
   { id: "quark/tongyi-qwen38-max-release-model", provider: "quark", up: "tongyi-qwen38-max-release-model", name: "夸克 Qwen3.8-Max" },
@@ -127,10 +196,16 @@ const MODELS = [
   { id: "yuanbao/deepseekv4", provider: "yuanbao", up: "deepseekv4", name: "元宝 内部 deepseekv4" }
 ];
 function resolve(m) {
-  if (!m || m === "auto") return MODELS.find(x => x.provider === (CFG.defaultProvider || "quark"));
-  const hit = MODELS.find(x => x.id === m); if (hit) return hit;
-  const bare = MODELS.find(x => x.id.split("/")[1] === m); if (bare) return bare;
-  return MODELS.find(x => x.provider === (CFG.defaultProvider || "quark"));
+  const hit = MODELS.find(x => x.id === m);
+  if (hit) { const g = GROUPS[hit.provider] || {}; return { group: hit.provider, up: hit.up, id: hit.id, builtin: g.type !== "openai", g }; }
+  const parts = String(m || "").split("/");
+  const gid = parts[0], rest = parts.slice(1).join("/");
+  const g = GROUPS[gid];
+  if (g && g.enabled) return { group: gid, up: rest, id: String(m), builtin: g.type !== "openai", g };
+  const bare = MODELS.find(x => x.id.split("/")[1] === String(m));
+  if (bare) { const bg = GROUPS[bare.provider] || {}; return { group: bare.provider, up: bare.up, id: bare.id, builtin: bg.type !== "openai", g: bg }; }
+  const d = MODELS.find(x => x.provider === (CFG.defaultProvider || "quark"));
+  return { group: d.provider, up: d.up, id: d.id, builtin: true, g: GROUPS[d.provider] || {} };
 }
 function buildPrompt(messages, prompt) {
   if (typeof prompt === "string" && prompt) return prompt;
@@ -151,23 +226,47 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
   const url = (req.url || "").split("?")[0];
   try {
+    if (url === "/api/status") return json(res, 200, { groups: GROUPS });
+    if (url === "/api/models") return json(res, 200, { object: "list", data: allModels() });
+    if (url === "/api/stats") return json(res, 200, statsPayload());
+    if (url === "/api/requests") return json(res, 200, { requests: STATS.requests.slice(0, 50) });
+    if (url.indexOf("/api/groups/") === 0) {
+      const seg = url.split("/"); const gid = decodeURIComponent(seg[3] || ""); const act = seg[4]; const g = GROUPS[gid];
+      if (!g) return fail(res, 404, "unknown group " + gid);
+      if (act === "toggle") { g.enabled = !g.enabled; return json(res, 200, { group: gid, enabled: g.enabled }); }
+      if (act === "start") {
+        if (!g.startCmd) return fail(res, 400, "no startCmd for " + gid);
+        try { spawn("cmd.exe", ["/c", "start", "", g.startCmd], { detached: true, stdio: "ignore" }).unref(); return json(res, 200, { started: gid, cmd: g.startCmd }); }
+        catch (e) { return fail(res, 500, e.message); }
+      }
+      return fail(res, 404, "unknown action");
+    }
+    if (url === "/" || url === "/index.html" || url === "/panel.html") {
+      try { const f = fs.readFileSync(path.join(HERE, "panel.html")); res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(f); }
+      catch (e) { return fail(res, 500, e.message); }
+    }
     if (req.method === "GET" && url === "/health") return json(res, 200, { ok: true, port: PORT, providers: ["quark", "yuanbao"], models: MODELS.length, browserRequired: false, ticketRefreshRequired: false });
-    if (req.method === "GET" && (url === "/v1/models" || url === "/models")) return json(res, 200, { object: "list", data: MODELS.map(m => ({ id: m.id, object: "model", owned_by: m.provider, name: m.name })) });
+    if (req.method === "GET" && (url === "/v1/models" || url === "/models")) return json(res, 200, { object: "list", data: MODELS.map(m => ({ id: m.id, object: "model", owned_by: m.group, name: m.name })) });
     if (req.method === "POST" && (url === "/v1/chat/completions" || url === "/chat/completions")) {
       const raw = await readBody(req); let body = {}; try { body = JSON.parse(raw || "{}"); } catch (e) { return fail(res, 400, "invalid JSON body"); }
       const prompt = buildPrompt(body.messages, body.prompt); if (!prompt) return fail(res, 400, "messages or prompt is required");
       const m = resolve(body.model);
-      const out = m.provider === "quark" ? await quarkChat(prompt, m.up) : await yuanbaoChat(prompt, m.up);
+      const t0 = Date.now(); let out;
+      try {
+        if (m.builtin) out = m.group === "quark" ? await quarkChat(prompt, m.up) : await yuanbaoChat(prompt, m.up);
+        else out = await upstreamChat(m.g, body, m.up || m.id.split("/").slice(1).join("/"));
+      } catch (e) { record({ time: new Date().toISOString().slice(11, 19), group: m.group, model: m.id, actual: m.up || m.id, in: estTokens(prompt), out: 0, ms: Date.now() - t0, ok: false, stream: !!body.stream }); throw e; }
+      record({ time: new Date().toISOString().slice(11, 19), group: m.group, model: m.id, actual: m.up || m.id, in: estTokens(prompt), out: estTokens(out.answer), ms: Date.now() - t0, ok: true, stream: !!body.stream });
       const id = "chatcmpl-" + Date.now().toString(36); const created = Math.floor(Date.now() / 1000);
       const usage = out.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
       if (body.stream) {
         res.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache" });
-        const base = { id, object: "chat.completion.chunk", created, model: m.id, provider: m.provider };
+        const base = { id, object: "chat.completion.chunk", created, model: m.id, provider: m.group };
         res.write("data: " + JSON.stringify(Object.assign({}, base, { choices: [{ index: 0, delta: { role: "assistant", content: out.answer }, finish_reason: null }] })) + NL + NL);
         res.write("data: " + JSON.stringify(Object.assign({}, base, { choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })) + NL + NL);
         res.write("data: [DONE]" + NL + NL); return res.end();
       }
-      return json(res, 200, { id, object: "chat.completion", created, model: m.id, provider: m.provider, choices: [{ index: 0, message: { role: "assistant", content: out.answer }, finish_reason: "stop" }], usage });
+      return json(res, 200, { id, object: "chat.completion", created, model: m.id, provider: m.group, choices: [{ index: 0, message: { role: "assistant", content: out.answer }, finish_reason: "stop" }], usage });
     }
     return fail(res, 404, "not found: " + url);
   } catch (e) { log("request failed:", e.message); return fail(res, 502, e.message); }

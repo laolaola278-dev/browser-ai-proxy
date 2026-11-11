@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Browser AI 网关 · 控制台</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--line:#e8eaf1;--text:#1c2030;--muted:#8b90a0;--primary:#6b5cff;--green:#22b07d;--red:#e05252;--amber:#e8a33d;--side:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+.app{display:flex;min-height:100vh}
+.side{width:210px;background:var(--side);border-right:1px solid var(--line);padding:18px 12px;position:fixed;height:100vh}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;padding:4px 10px 18px}
+.brand .dot{width:22px;height:22px;border-radius:7px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px}
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:#5a6072;cursor:pointer;text-decoration:none}
+.nav a:hover{background:#f2f3f9}.nav a.on{background:#efecff;color:var(--primary);font-weight:600}
+.nav .cap{font-size:11px;color:var(--muted);padding:14px 12px 5px;letter-spacing:.5px}
+.main{margin-left:210px;flex:1;padding:16px 22px 40px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.top h1{font-size:18px;margin:0;font-weight:700}
+.live{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}
+.live i{width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;box-shadow:0 0 0 3px #d9f5e9}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:14px;font-weight:700}
+.row{display:flex;gap:12px;flex-wrap:wrap}.kpi{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .v{font-size:24px;font-weight:700;margin-top:6px}.kpi .l{color:var(--muted);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid #f1f2f7;white-space:nowrap}tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;background:#f0eeff;color:var(--primary);font-size:11px;margin-right:6px}
+.tag.g{background:#e4f7ef;color:var(--green)}.tag.r{background:#fdeaea;color:var(--red)}.tag.a{background:#fff3e0;color:#c57f14}
+.search{width:260px;padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:12px}
+.grp{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;background:#fff}
+.grp .ico{width:34px;height:34px;border-radius:9px;background:#f1efff;color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.grp .info{flex:1;min-width:0}.grp .nm{font-weight:600}.grp .sub{color:var(--muted);font-size:11.5px;margin-top:3px;overflow:hidden;text-overflow:ellipsis}
+.grp .key{color:var(--muted);font-size:11.5px;font-family:Consolas,monospace}
+.st{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;background:#ccc}.st.on{background:var(--green);box-shadow:0 0 0 3px #d9f5e9}.st.off{background:var(--red)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12px;color:#444}
+.btn:hover{border-color:var(--primary);color:var(--primary)}.btn.p{background:var(--primary);color:#fff;border-color:var(--primary)}
+.sw{width:38px;height:21px;border-radius:20px;background:#d9dce6;position:relative;cursor:pointer;transition:.2s;flex:none}
+.sw.on{background:var(--primary)}.sw:after{content:"";position:absolute;width:17px;height:17px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}.sw.on:after{left:19px}
+.bars{display:flex;align-items:flex-end;gap:10px;height:130px;padding:8px 0}.bar{flex:1;background:linear-gradient(180deg,#8a7dff,#6b5cff);border-radius:5px 5px 0 0;min-height:3px;position:relative}
+.bar span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden}
+.heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:8px}.heat i{height:13px;border-radius:3px;background:#eceefa;display:block}
+.flow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0}.node{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fff;min-width:130px}
+.node b{display:block;font-size:12px}.node small{color:var(--muted)}
+.arrow{color:var(--primary);font-size:18px}.muted{color:var(--muted)}.hide{display:none}
+.foot{color:var(--muted);font-size:11px;margin-top:18px;text-align:center}
+.err{color:var(--red);font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="dot">AI</span> Browser AI 网关</div>
+    <div class="nav">
+      <a class="on" data-p="providers">◆ 供应商</a>
+      <a data-p="routing">⇄ 路由</a>
+      <a data-p="gateway">▤ 网关</a>
+      <div class="cap">观测</div>
+      <a data-p="usage">▥ 用量</a>
+    </div>
+    <div class="foot" id="sidefoot">127.0.0.1:8976</div>
+  </aside>
+  <main class="main">
+    <div class="top"><h1 id="title">供应商</h1><div class="live"><i></i><span id="live">实时 · 5 秒刷新</span></div></div>
+
+    <section id="p-providers">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h2 style="margin:0">网关分组</h2>
+          <input class="search" id="q" placeholder="查找供应商 / 分组">
+        </div>
+        <div id="groups"></div>
+        <div class="err" id="gerr"></div>
+      </div>
+      <div class="card"><h2>模型清单</h2><div id="models" class="muted">加载中…</div></div>
+    </section>
+
+    <section id="p-routing" class="hide">
+      <div class="card">
+        <h2>路由组 · 智能分发</h2>
+        <div class="muted" style="margin-bottom:14px">请求模型 → 统一代理路由 → 分组上游。每个网关的代理独立分组，互不混淆。</div>
+        <div class="flow">
+          <div class="node"><b>请求模型</b><small>group/model</small></div><span class="arrow">→</span>
+          <div class="node" style="border-color:var(--primary)"><b>Browser AI 网关</b><small>127.0.0.1:8976 · 智能</small></div><span class="arrow">→</span>
+          <div id="routenodes" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+      </div>
+      <div class="card"><h2>分组明细</h2><table><thead><tr><th>分组</th><th>类型</th><th>上游</th><th>模型数</th><th>状态</th></tr></thead><tbody id="routetable"></tbody></table></div>
+    </section>
+
+    <section id="p-gateway" class="hide">
+      <div class="card"><h2>网关本体</h2><div id="gwinfo" class="muted">加载中…</div></div>
+      <div class="card"><h2>上游健康检查</h2><table><thead><tr><th>分组</th><th>健康检查</th><th>状态</th></tr></thead><tbody id="healthtable"></tbody></table></div>
+    </section>
+
+    <section id="p-usage" class="hide">
+      <div class="row" id="kpis"></div>
+      <div class="card"><h2>按分组请求量</h2><div class="bars" id="bars"></div><div style="height:22px"></div></div>
+      <div class="card"><h2>最近请求</h2><table><thead><tr><th>时间</th><th>分组</th><th>请求模型</th><th>实际模型</th><th>输入</th><th>输出</th><th>耗时</th><th>状态</th></tr></thead><tbody id="reqtable"></tbody></table></div>
+      <div class="card"><h2>用量热力（最近 14 天 · 估算）</h2><div class="heat" id="heat"></div></div>
+    </section>
+  </main>
+</div>
+<script>
+var STATE={groups:{},stats:{},requests:[],models:[]};
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function api(path,opt){return fetch(path,opt).then(function(r){return r.json()}).catch(function(e){return {error:String(e)}})}
+function switchPage(p){
+  document.querySelectorAll('.nav a').forEach(function(a){a.classList.toggle('on',a.getAttribute('data-p')===p)});
+  ['providers','routing','gateway','usage'].forEach(function(x){$('p-'+x).classList.toggle('hide',x!==p)});
+  $('title').textContent={providers:'供应商',routing:'路由',gateway:'网关',usage:'观测 / 用量'}[p];
+}
+document.querySelectorAll('.nav a').forEach(function(a){a.onclick=function(){switchPage(a.getAttribute('data-p'))}});
+$('q').oninput=renderGroups;
+function groupRows(){
+  var q=$('q').value.toLowerCase();
+  return Object.keys(STATE.groups).filter(function(k){
+    var g=STATE.groups[k];return !q||k.toLowerCase().indexOf(q)>=0||String(g.label||'').toLowerCase().indexOf(q)>=0||String(g.baseURL||g.endpoint||'').toLowerCase().indexOf(q)>=0;
+  });
+}
+function renderGroups(){
+  var html='';
+  groupRows().forEach(function(k){
+    var g=STATE.groups[k]||{}, on=!!g.enabled, live=!!g.live;
+    var key=g.key?String(g.key).slice(0,4)+'…'+String(g.key).slice(-4):'无鉴权';
+    html+='<div class="grp"><div class="ico">'+esc(k.slice(0,2).toUpperCase())+'</div>'+
+      '<div class="info"><div class="nm">'+esc(g.label||k)+' <span class="tag '+(g.type==='builtin'?'':'a')+'">'+esc(g.type||'group')+'</span></div>'+
+      '<div class="sub">'+esc(g.baseURL||g.endpoint||'')+' · '+(g.modelCount!=null?g.modelCount:(g.models||0))+' 个模型 · '+esc(g.note||'')+'</div></div>'+
+      '<div class="key">'+esc(key)+'</div>'+
+      '<div><span class="st '+(live?'on':'off')+'"></span><span class="muted">'+(live?'在线':'离线')+'</span>'+((g.healthInfo&&g.healthInfo.token_status==='expired')?' <span class="tag r">token 过期</span>':'')+'</div>'+
+      '<div class="sw '+(on?'on':'')+'" onclick="toggleGroup(\''+k+'\')"></div>'+
+      (g.startCmd?'<button class="btn" onclick="startGroup(\''+k+'\')">启动</button>':'')+
+      '</div>';
+  });
+  $('groups').innerHTML=html||'<div class="muted">没有匹配的分组</div>';
+}
+function toggleGroup(k){api('/api/groups/'+encodeURIComponent(k)+'/toggle',{method:'POST'}).then(refresh)}
+function startGroup(k){api('/api/groups/'+encodeURIComponent(k)+'/start',{method:'POST'}).then(function(r){if(r&&r.error)alert(r.error);else alert('已发出启动请求');setTimeout(refresh,1500)})}
+function renderModels(){
+  var by={};STATE.models.forEach(function(m){var g=m.id.split('/')[0];(by[g]=by[g]||[]).push(m.id)});
+  var h='';Object.keys(by).forEach(function(g){h+='<div style="margin-bottom:8px"><span class="tag">'+esc(g)+'</span><span class="muted">'+by[g].map(esc).join(' · ')+'</span></div>'});
+  $('models').innerHTML=h||'<span class="muted">无模型</span>';
+}
+function renderRouting(){
+  var h='';Object.keys(STATE.groups).forEach(function(k){var g=STATE.groups[k];h+='<div class="node"><b>'+esc(g.label||k)+'</b><small>'+esc(g.baseURL||g.endpoint||'内置')+'</small></div>'});
+  $('routenodes').innerHTML=h;
+  var t='';Object.keys(STATE.groups).forEach(function(k){var g=STATE.groups[k];t+='<tr><td><span class="tag">'+esc(k)+'</span></td><td>'+esc(g.type)+'</td><td>'+esc(g.baseURL||g.endpoint||'-')+'</td><td>'+(g.modelCount!=null?g.modelCount:(g.models||0))+'</td><td><span class="st '+(g.live?'on':'off')+'"></span>'+(g.live?'在线':'离线')+'</td></tr>'});
+  $('routetable').innerHTML=t;
+}
+function renderGateway(){
+  var s=STATE.stats||{};$('gwinfo').innerHTML='<div class="row"><div class="kpi"><div class="l">监听</div><div class="v">127.0.0.1:'+(s.port||8976)+'</div></div><div class="kpi"><div class="l">运行</div><div class="v">'+(s.uptime||'-')+'</div></div><div class="kpi"><div class="l">分组</div><div class="v">'+Object.keys(STATE.groups).length+'</div></div><div class="kpi"><div class="l">模型</div><div class="v">'+STATE.models.length+'</div></div></div>';
+  var t='';Object.keys(STATE.groups).forEach(function(k){var g=STATE.groups[k];t+='<tr><td><span class="tag">'+esc(k)+'</span></td><td>'+esc(g.health||g.endpoint||'-')+'</td><td><span class="st '+(g.live?'on':'off')+'"></span>'+(g.live?'200 OK':'未运行')+((g.healthInfo&&g.healthInfo.token_status==='expired')?' <span class="tag r">需重新登录上游</span>':'')+'</td></tr>'});
+  $('healthtable').innerHTML=t;
+}
+function renderUsage(){
+  var s=STATE.stats||{},tot=s.total||0,ok=s.ok||0;
+  var k=[['总请求',tot],['Token/秒(估算)',s.tps||0],['成功率',tot?Math.round(ok/tot*100)+'%':'-'],['平均耗时',s.avgMs?s.avgMs+' ms':'-']];
+  $('kpis').innerHTML=k.map(function(x){return '<div class="kpi"><div class="l">'+x[0]+'</div><div class="v">'+x[1]+'</div></div>'}).join('');
+  var bg=s.byGroup||{},keys=Object.keys(bg),max=Math.max.apply(null,keys.map(function(k){return bg[k]}).concat([1]));
+  $('bars').innerHTML=keys.length?keys.map(function(k){return '<div class="bar" style="height:'+Math.max(3,Math.round(bg[k]/max*110))+'px"><span>'+esc(k)+' '+bg[k]+'</span></div>'}).join(''):'<div class="muted">暂无数据</div>';
+  $('reqtable').innerHTML=(STATE.requests||[]).slice(0,20).map(function(r){
+    return '<tr><td>'+esc(r.time)+'</td><td><span class="tag '+(r.ok?'g':'r')+'">'+esc(r.group)+'</span></td><td>'+esc(r.model)+'</td><td>'+esc(r.actual||r.model)+'</td><td>'+(r.in||0)+'</td><td>'+(r.out||0)+'</td><td>'+(r.ms||0)+' ms</td><td>'+(r.ok?'<span class="tag g">200</span>':'<span class="tag r">失败</span>')+'</td></tr>';
+  }).join('')||'<tr><td colspan="8" class="muted">暂无请求</td></tr>';
+  var heat='';for(var i=0;i<98;i++){var v=(s.heat&&s.heat[i])||0;var a=Math.min(1,v/20);heat+='<i style="background:rgba(107,92,255,'+(0.08+a*0.85)+')" title="'+v+'"></i>'}$('heat').innerHTML=heat;
+}
+function refresh(){
+  api('/api/status').then(function(d){if(d&&!d.error){STATE.groups=d.groups||{};renderGroups();renderRouting();renderGateway()}});
+  api('/api/models').then(function(d){if(d&&d.data){STATE.models=d.data;renderModels()}});
+  api('/api/stats').then(function(d){if(d&&!d.error){STATE.stats=d;renderUsage()}});
+  api('/api/requests').then(function(d){if(d&&d.requests){STATE.requests=d.requests;renderUsage()}});
+}
+refresh();setInterval(refresh,5000);
+</script>
+</body>
+</html>

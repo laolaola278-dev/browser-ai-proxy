@@ -2,11 +2,47 @@
   "port": 8976,
   "defaultProvider": "quark",
   "quark": {
-    "ut": "<从夸克 chrome.publicParamsPrivate.ucParams(\"ut\") 取得>"
+    "ut": "<chrome.publicParamsPrivate.ucParams(\"ut\") 返回值>"
   },
   "yuanbao": {
     "qua": "PR=PC&CO=WBK&QV=3&PL=WIN&PB=GE&PPVN=22.3.7007.400&COVC=0413800&CHID=10026236&RL=2560*1440&MO=30DJSE0S00&VE=GA&OS=10.0.19045&SYSARCH=Intel&RT=64",
     "guid": "",
     "qimei": ""
+  },
+  "groups": {
+    "quark": {
+      "type": "builtin",
+      "label": "夸克 Qwen（内嵌网页）",
+      "endpoint": "chat-quark2.qianwen.com/api/v2/chat",
+      "enabled": true,
+      "key": "",
+      "models": 6
+    },
+    "yuanbao": {
+      "type": "builtin",
+      "label": "QQ浏览器 元宝助手（扩展侧栏）",
+      "endpoint": "qbqaproxy.imtt.qq.com/cgi-bin/gpt/qbot/qa",
+      "enabled": true,
+      "key": "",
+      "models": 13
+    },
+    "deepseek-web": {
+      "type": "openai",
+      "label": "DeepSeek 网页版代理",
+      "baseURL": "http://127.0.0.1:18088/v1",
+      "health": "http://127.0.0.1:18088/health",
+      "startCmd": "<桌面 DeepSeekWebProxy-Start.cmd 绝对路径>",
+      "enabled": true,
+      "key": ""
+    },
+    "duck": {
+      "type": "openai",
+      "label": "Duck2API 网关（duck.apk）",
+      "baseURL": "http://127.0.0.1:7749/v1",
+      "health": "http://127.0.0.1:7749/health",
+      "startCmd": "<桌面 启动Duck网关.cmd 绝对路径>",
+      "enabled": true,
+      "key": ""
+    }
   }
 }

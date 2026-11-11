@@ -50,3 +50,35 @@ curl -X POST http://127.0.0.1:8976/v1/chat/completions -H "Content-Type: applica
 - `server.mjs` / `config.example.json` / `.gitignore` / `browser-ai-proxy.cmd`（桌面）—— 统一代理本体
 - `standalone/quark`、`standalone/yuanbao` —— 两个独立代理的源码快照（敏感配置已排除）
 - 完整逆向报告见 `E:\hds(js)\look\quark-re\REPORT.md` 与 `qq-re\REPORT.md`（未纳入本仓库）
+
+## 分组网关（每个代理独立分组）
+
+统一代理按 `groups` 配置管理，模型 id 一律 `<组名>/<模型>`，互不混淆：
+
+| 分组 | 类型 | 上游 | 模型 |
+|---|---|---|---|
+| `quark` | 内置 | 夸克 quarkchat `/api/v2/chat` | 6 |
+| `yuanbao` | 内置 | QQ 浏览器元宝 `qbot/qa` | 13 |
+| `deepseek-web` | 外部 OpenAI 上游 | `http://127.0.0.1:18088/v1` | 14（动态拉取） |
+| `duck` | 外部 OpenAI 上游 | `http://127.0.0.1:7749/v1` | 6（动态拉取） |
+
+- 外部两个网关的桌面启动脚本已收录在 `standalone/launchers/`（快照），`config.json` 里每组的 `startCmd` 指向桌面原路径；面板可一键「启动」。
+- 外部组通过 `/v1/models` 动态拉模型、`/health` 做健康检查（15 秒轮询），`key` 为空时走无鉴权。
+- DeepSeek 网页版代理当前 `token_status: expired`（上游需要重新登录 chat.deepseek.com），面板会标红提示；这是上游状态，不影响其它分组。
+
+## 前端面板（参考喜鹊 magpie 布局）
+
+浏览器打开 `http://127.0.0.1:8976/` 即可，纯静态单文件 `panel.html`，5 秒自动刷新。
+
+- 侧栏：供应商 / 路由 / 网关 / 观测·用量
+- 供应商：分组卡片（名称、地址、模型数、脱敏 key、在线状态、启用开关、启动按钮、token 过期提示）
+- 路由：请求模型 → 统一代理 → 各分组上游的拓扑与分组明细
+- 网关：本体信息 + 各组健康检查
+- 用量：总请求 / Token 每秒(估算) / 成功率 / 平均耗时、按分组柱状图、最近请求表格、热力图
+- 数据来自 `/api/status`、`/api/models`、`/api/stats`、`/api/requests`；开关走 `/api/groups/:id/toggle`，启动走 `/api/groups/:id/start`
+
+## GitHub
+
+私有仓库：https://github.com/laolaola278-dev/browser-ai-proxy
+
+`config.json`（含设备 ut）与 `ticket.json` 已被 `.gitignore` 排除，仓库只含 `config.example.json` 模板。
