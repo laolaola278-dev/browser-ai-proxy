@@ -270,7 +270,7 @@ const server = http.createServer(async (req, res) => {
       catch (e) { return fail(res, 500, e.message); }
     }
     if (req.method === "GET" && url === "/health") return json(res, 200, { ok: true, port: PORT, providers: Object.keys(GROUPS), models: allModels().length, browserRequired: false, ticketRefreshRequired: false });
-    if (req.method === "GET" && (url === "/v1/models" || url === "/models")) return json(res, 200, { object: "list", data: MODELS.map(m => ({ id: m.id, object: "model", owned_by: m.group, name: m.name })) });
+    if (req.method === "GET" && (url === "/v1/models" || url === "/models")) return json(res, 200, { object: "list", data: allModels() });
     if (req.method === "POST" && (url === "/v1/chat/completions" || url === "/chat/completions")) {
       const raw = await readBody(req); let body = {}; try { body = JSON.parse(raw || "{}"); } catch (e) { return fail(res, 400, "invalid JSON body"); }
       const prompt = buildPrompt(body.messages, body.prompt); if (!prompt) return fail(res, 400, "messages or prompt is required");
