@@ -44,3 +44,9 @@ curl -X POST http://127.0.0.1:8976/v1/chat/completions -H "Content-Type: applica
 ## 证据
 
 见 `E:\hds(js)\look\quark-re\REPORT.md` 与 `E:\hds(js)\look\qq-re\REPORT.md`。
+
+## 仓库结构
+
+- `server.mjs` / `config.example.json` / `.gitignore` / `browser-ai-proxy.cmd`（桌面）—— 统一代理本体
+- `standalone/quark`、`standalone/yuanbao` —— 两个独立代理的源码快照（敏感配置已排除）
+- 完整逆向报告见 `E:\hds(js)\look\quark-re\REPORT.md` 与 `qq-re\REPORT.md`（未纳入本仓库）
