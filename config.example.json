@@ -1,0 +1,12 @@
+{
+  "port": 8976,
+  "defaultProvider": "quark",
+  "quark": {
+    "ut": "<从夸克 chrome.publicParamsPrivate.ucParams(\"ut\") 取得>"
+  },
+  "yuanbao": {
+    "qua": "PR=PC&CO=WBK&QV=3&PL=WIN&PB=GE&PPVN=22.3.7007.400&COVC=0413800&CHID=10026236&RL=2560*1440&MO=30DJSE0S00&VE=GA&OS=10.0.19045&SYSARCH=Intel&RT=64",
+    "guid": "",
+    "qimei": ""
+  }
+}
