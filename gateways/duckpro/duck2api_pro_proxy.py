@@ -28,7 +28,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 # 导入原始模块的握手和上游
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + r'\duck-apk')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "duck"))
 import pure_handshake as ph
 
 # 导入增强模块
@@ -127,7 +127,7 @@ class SSEParser:
 # ---------------------------------------------------------------------------
 
 def load_fallback_models():
-    fp = os.path.join(HERE, "..", "duck-apk", "models-extracted.json")
+    fp = os.path.join(HERE, "..", "duck", "models-extracted.json")
     if os.path.exists(fp):
         with open(fp, "r", encoding="utf-8") as f:
             return json.load(f)

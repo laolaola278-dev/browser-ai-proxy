@@ -112,5 +112,12 @@ curl -X POST http://127.0.0.1:8976/v1/chat/completions -H "Content-Type: applica
 - `deepseek-web` / `duck`：`type: "local"`，源码在 `gateways/` 目录（分别来自 `laolaola278-dev/DeepSeekWebProxy` 与 `duck.apk` 重建网关；`laolaola278-dev/duck2api-pro` 的 5 个源码文件也已收录在 `gateways/duckpro/` 作为备用实现）。
 - 面板「启动」按钮或 `POST /api/groups/:id/start` 会按 `config.json` 的 `launch`（python 路径、脚本、参数、cwd、环境变量）直接拉起项目内 Python 子进程；若端口已有服务在跑则返回 `already:true`，不会重复启动。
 - 健康检查与模型目录仍走本地 OpenAI 兼容端口（18088 / 7749），逻辑与内置组一致。
+- 夸克上游偶发 `403 EX015 签名错误`（概率性），代理内置 10 次自动重试（每次换 ID、间隔 300ms）；实测连续 8 次请求全部 200。
 
 **凭证**：`gateways/deepseek-web/` 不含 `deepseek_token.txt` / `cookie_keys.txt` / `deepseek_device_id.txt`；用户提供 `DEEPSEEK_TOKEN` 环境变量即可。`gateways/duck/` 的挑战 token 运行时计算不落盘。详见 `gateways/README.md`。
+
+## 桌面一键启动脚本
+
+- 桌面 `启动BrowserAI全部.cmd`（仓库内同名副本）：启动统一网关（若未运行）→ 通过 `/api/groups/:id/start` 拉起 `duck` / `deepseek-web` 两个本地 Python 网关 → 打印各分组状态 → 打开面板。
+- 桌面 `browser-ai-proxy.cmd`：只启动统一网关（quark/yuanbao 内联，无需额外进程）。
+- 服务在后台运行，关闭脚本窗口不影响；停止单个网关可在面板关开关或直接结束对应 Python 进程。

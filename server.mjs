@@ -52,7 +52,7 @@ async function qkOnce(prompt, model) {
 }
 async function quarkChat(prompt, model) {
   let last = null;
-  for (let i = 0; i < 5; i++) { try { return await qkOnce(prompt, model); } catch (e) { last = e; if (/QUARK_REJECT|timeout|aborted/i.test(e.message) && i < 4) { await sleep(250); continue; } throw e; } }
+  for (let i = 0; i < 10; i++) { try { return await qkOnce(prompt, model); } catch (e) { last = e; if (/QUARK_REJECT|timeout|aborted/i.test(e.message) && i < 9) { await sleep(300); continue; } throw e; } }
   throw last;
 }
 
