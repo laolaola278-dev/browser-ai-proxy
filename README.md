@@ -26,8 +26,9 @@
 | [🧭 它是什么](#overview) | [🚀 安装与启动](#start) |
 | [🧩 四个分组](#groups) | [💻 用法](#usage) |
 | [⚙️ 配置](#config) | [📁 项目结构](#structure) |
-| [⚠️ 边界与已知限制](#limits) | [✅ 实测记录](#tests) |
-| [📚 逆向报告](#reports) | [🧾 免责](#disclaimer) |
+| [🔑 账号 · 注册 · 登录凭证](#accounts) | [⚠️ 边界与已知限制](#limits) |
+| [✅ 实测记录](#tests) | [📚 逆向报告](#reports) |
+| [🧾 免责](#disclaimer) | |
 
 ---
 
@@ -211,13 +212,56 @@ browser-ai-proxy/
 
 ---
 
+<a id="accounts"></a>
+
+## 🔑 账号 · 注册 · 登录凭证
+
+> **一句话结论**：四个分组默认都不需要「注册账号」，也不需要本项目代做**登录跳转**；唯一例外是 `deepseek-web`，它需要使用者自行准备的网页版 `userToken`，且属于高风险分组。
+
+### 各分组对照
+
+| 分组 | 需要注册 / 登录吗 | 有登录跳转吗 | 凭证从哪来 | 失效后能否「续」 |
+|---|---|---|---|---|
+| `quark` | ❌ 游客态即可 | ❌ 无 | 设备级固定串 `ut`（`chrome.publicParamsPrivate.ucParams("ut")`），一次取、长期有效；WG 票据已证非必需 | 不涉及账号；换机器 / 清设备标识只需重新取一次 `ut` |
+| `yuanbao` | ❌ 游客态即可 | ❌ 无 | `guid` / `qimei36` 运行时随机生成 | ✅ 遇登录墙 / 超时自动 `rotateDevice()` 换设备指纹，可无限续 |
+| `duck` | ❌ 匿名 | ❌ 无 | `X-Vqd-Hash-1` 挑战 token 运行时由 `pure_handshake.py` + `solve_challenge.js` 在 Node `vm` 求解，不落盘 | ✅ 挑战过期（TTL 约 1800s）自动重新求解；451 需海外出口 |
+| `duckpro` | ❌ 匿名身份池 | ❌ 无 | cookie + TLS 指纹 + challenge token 绑定，`IdentityPool` 自动轮换 | ✅ 限流时自动切换下一个身份 |
+| `deepseek-web` | ✅ **必须登录** chat.deepseek.com | ❌ **本项目不做跳转登录** | 使用者登录后从浏览器 Local Storage 取 `userToken` 再注入 | ⚠️ 见下 |
+
+### 登录跳转 vs 凭证登录
+
+- 本项目**不提供** OAuth / 扫码 / 「打开浏览器跳到登录页 → 回调写回凭证」的流程，**不托管任何账号或密码**，也不代注册账号。
+- `deepseek-web` 走的是**凭证注入（token-based）**，不是跳转登录。三种方式任选其一，前提都是使用者先自行在 Chromium 登录网页版：
+
+  | 方式 | 做法 |
+  |---|---|
+  | 环境变量 | `DEEPSEEK_TOKEN=<你的 userToken>` |
+  | 本地文件 | 同目录 `deepseek_token.txt`（已被 `.gitignore` 排除） |
+  | 热替换 | `POST http://127.0.0.1:18088/_set_token`，body `{"token":"<你的 userToken>"}` |
+
+  此外该代理有「令牌自愈」：上游返回 `40003 INVALID_TOKEN` 时会自动重扫本机 Chromium 的 Local Storage leveldb 寻找可用 token —— 但这仍以**你已在本机浏览器登录过**为前提，不等于替你登录。
+- `quark` / `yuanbao` / `duck` / `duckpro` 全程不涉及网页登录跳转，本地 `127.0.0.1` 直接可用。
+
+### 是否能「续注册」
+
+- **游客 / 匿名分组**：压根没有「注册」这一步 —— 设备指纹、挑战 token、匿名身份都由程序运行时生成，用完即换，天然可持续使用；不需要、也无法向本项目「续注册」账号。
+- **`deepseek-web`**：
+  - 凭证过期（`token_status: expired`）→ 重新登录网页版取新 `userToken` 注入即可，这是**续凭证**。
+  - **账号封禁不能靠重新注册绕过**：调研实测 2026-11-09 起账号被封 9 天，内置 `upstream_pacing` 不保证免封，再次触发可能延长至永久停用；注册新账号是使用者与上游之间的行为，本项目不提供、不建议以多账号规避风控，也请勿使用主力账号。
+  - 因此该分组**不设为 `defaultProvider`**，仅在有合法凭证且愿意承担风险时手动选择。
+
+### 凭证不进仓库
+
+`config.json` / `deepseek_token.txt` / `cookie_keys.txt` / `deepseek_device_id.txt` / `*.pid` 均被 `.gitignore` 排除；`config.example.json` 与 `.env.example` 只有空占位。统一网关不会把任何上游 token 写进日志或统计。
+
+---
 <a id="limits"></a>
 
 ## ⚠️ 边界与已知限制
 
 ### 上游状态（不是本项目故障）
 
-- **`deepseek-web`**：`health.token_status = expired`，实测对话返回上游 401；调研记录 2026-11-09 起账号被封 9 天。**高风险，不要设为默认**。恢复需重新登录 chat.deepseek.com 或 `POST /_set_token`，并提供 `DEEPSEEK_TOKEN`。
+- **`deepseek-web`**：`health.token_status = expired`，实测对话返回上游 401；调研记录 2026-11-09 起账号被封 9 天。**高风险，不要设为默认**。恢复需重新登录 chat.deepseek.com 或 `POST /_set_token`，并提供 `DEEPSEEK_TOKEN`；账号与凭证规则详见 [🔑 账号 · 注册 · 登录凭证](#accounts)。
 - **`duck`**：仅 5 个端点，模型目录动态（上游 30 分钟缓存，失败回落 `models-extracted.json`）；纯文本、不支持图片 / 联网；上游靠 `X-Vqd-Hash-1` 挑战；451 需海外出口。本地 curl 建议 `--noproxy "*"`。
 - **`quark`**：上游偶发 `403 EX015 签名错误`（概率性），代理内置 **10 次自动重试**（每次换 ID、间隔 300ms）。
 
@@ -272,7 +316,7 @@ browser-ai-proxy/
 
 ## 🧾 免责
 
-本项目为个人学习与技术研究所作，仅在本机 `127.0.0.1` 监听。使用各上游服务时请遵守其服务条款；账号、Token 与设备标识均由使用者自行准备，作者不提供也不分发任何凭证。
+本项目为个人学习与技术研究所作，仅在本机 `127.0.0.1` 监听。使用各上游服务时请遵守其服务条款；账号、Token 与设备标识均由使用者自行准备；本项目不提供账号注册、不做登录跳转、不分发任何凭证，也不协助绕过上游风控。
 
 <div align="center">
 
