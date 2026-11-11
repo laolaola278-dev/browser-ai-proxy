@@ -1,0 +1,146 @@
+[
+  {
+    "id": "gpt-5.6-terra",
+    "name": "GPT-5.6 Terra",
+    "provider": "openai",
+    "supportedReasoningEffort": [
+      "none",
+      "low",
+      "medium"
+    ],
+    "accessTier": [
+      "plus",
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "gpt-6-luna",
+    "name": "GPT-6 Luna",
+    "provider": "openai",
+    "supportedReasoningEffort": [
+      "none",
+      "low"
+    ],
+    "accessTier": [
+      "free",
+      "plus",
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "gpt-5.4-mini",
+    "name": "GPT-5.4 mini",
+    "provider": "openai",
+    "supportedReasoningEffort": [
+      "none",
+      "low",
+      "medium"
+    ],
+    "accessTier": [
+      "free",
+      "plus",
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "claude-sonnet-4-6",
+    "name": "Claude Sonnet 4.6",
+    "provider": "anthropic",
+    "supportedReasoningEffort": [
+      "none",
+      "low"
+    ],
+    "accessTier": [
+      "plus",
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "claude-haiku-4-5",
+    "name": "Claude Haiku 4.5",
+    "provider": "anthropic",
+    "supportedReasoningEffort": [
+      "none",
+      "low"
+    ],
+    "accessTier": [
+      "free",
+      "plus",
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "gpt-5.6-sol",
+    "name": "GPT-5.6 Sol",
+    "provider": "openai",
+    "supportedReasoningEffort": [
+      "none",
+      "low",
+      "medium"
+    ],
+    "accessTier": [
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "claude-opus-4-8",
+    "name": "Claude Opus 4.8",
+    "provider": "anthropic",
+    "supportedReasoningEffort": [
+      "none",
+      "low",
+      "medium"
+    ],
+    "accessTier": [
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "mistral-small-2603",
+    "name": "Mistral Small 4",
+    "provider": "mistral",
+    "supportedReasoningEffort": [],
+    "accessTier": [
+      "free",
+      "plus",
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "tinfoil/gpt-oss-120b",
+    "name": "gpt-oss 120B",
+    "provider": "tinfoil",
+    "supportedReasoningEffort": [
+      "low"
+    ],
+    "accessTier": [
+      "free",
+      "plus",
+      "pro",
+      "internal"
+    ]
+  },
+  {
+    "id": "tinfoil/gemma4-31b",
+    "name": "Gemma 4 31B",
+    "provider": "tinfoil",
+    "supportedReasoningEffort": [
+      "none",
+      "low"
+    ],
+    "accessTier": [
+      "free",
+      "plus",
+      "pro",
+      "internal"
+    ]
+  }
+]

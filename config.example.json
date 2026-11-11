@@ -27,22 +27,46 @@
       "models": 13
     },
     "deepseek-web": {
-      "type": "openai",
-      "label": "DeepSeek 网页版代理",
+      "type": "local",
+      "label": "DeepSeek 网页版代理（项目自带源码）",
       "baseURL": "http://127.0.0.1:18088/v1",
       "health": "http://127.0.0.1:18088/health",
-      "startCmd": "<桌面 DeepSeekWebProxy-Start.cmd 绝对路径>",
       "enabled": true,
-      "key": ""
+      "key": "",
+      "launch": {
+        "python": "<python.exe 绝对路径>",
+        "cwd": "gateways/deepseek-web",
+        "script": "_run_live_proxy_new.py",
+        "args": [],
+        "port": 18088,
+        "env": {
+          "DEEPSEEK_HOST": "127.0.0.1",
+          "DEEPSEEK_PORT": "18088"
+        }
+      }
     },
     "duck": {
-      "type": "openai",
-      "label": "Duck2API 网关（duck.apk）",
+      "type": "local",
+      "label": "Duck2API 网关（项目自带源码）",
       "baseURL": "http://127.0.0.1:7749/v1",
       "health": "http://127.0.0.1:7749/health",
-      "startCmd": "<桌面 启动Duck网关.cmd 绝对路径>",
       "enabled": true,
-      "key": ""
+      "key": "",
+      "launch": {
+        "python": "<python.exe 绝对路径>",
+        "cwd": "gateways/duck",
+        "script": "duck2api_proxy.py",
+        "args": [
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "7749",
+          "--tools",
+          "emulated"
+        ],
+        "port": 7749,
+        "env": {}
+      }
     }
   }
 }

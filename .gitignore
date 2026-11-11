@@ -1,6 +1,16 @@
 config.json
+ticket.json
 profile/
 cdp-profile/
 *.log
 node_modules/
 .DS_Store
+gateways/**/__pycache__/
+gateways/**/*.pyc
+gateways/**/*.pid
+gateways/**/token.json
+gateways/**/deepseek_token.txt
+gateways/**/cookie_keys.txt
+gateways/**/deepseek_device_id.txt
+gateways/**/*.env
+gateways/**/.env

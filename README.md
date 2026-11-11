@@ -59,8 +59,8 @@ curl -X POST http://127.0.0.1:8976/v1/chat/completions -H "Content-Type: applica
 |---|---|---|---|
 | `quark` | 内置 | 夸克 quarkchat `/api/v2/chat` | 6 |
 | `yuanbao` | 内置 | QQ 浏览器元宝 `qbot/qa` | 13 |
-| `deepseek-web` | 外部 OpenAI 上游 | `http://127.0.0.1:18088/v1` | 14（动态拉取） |
-| `duck` | 外部 OpenAI 上游 | `http://127.0.0.1:7749/v1` | 6（动态拉取） |
+| `deepseek-web` | 本地托管（项目自带源码） | `gateways/deepseek-web/` → 127.0.0.1:18088 | 14（动态拉取） |
+| `duck` | 本地托管（项目自带源码） | `gateways/duck/` → 127.0.0.1:7749 | 6（动态拉取） |
 
 - 外部两个网关的桌面启动脚本已收录在 `standalone/launchers/`（快照），`config.json` 里每组的 `startCmd` 指向桌面原路径；面板可一键「启动」。
 - 外部组通过 `/v1/models` 动态拉模型、`/health` 做健康检查（15 秒轮询），`key` 为空时走无鉴权。
@@ -105,3 +105,12 @@ curl -X POST http://127.0.0.1:8976/v1/chat/completions -H "Content-Type: applica
 ## 调研资料（未纳入本仓库）
 
 `E:\hds(js)\look\qq-re\research\gateways.md`（23KB / 两网关 7 节规格）、`magpie-ui.md`（26.6KB / 296 行，含 HTML/CSS 片段）、`evidence\`（29 个文件 / 32 条编号证据）。
+
+## 四个代理全部自包含（网关可直接启动）
+
+- `quark` / `yuanbao`：纯 Node 内联在 `server.mjs`，随网关启动即可用，无需额外进程。
+- `deepseek-web` / `duck`：`type: "local"`，源码在 `gateways/` 目录（分别来自 `laolaola278-dev/DeepSeekWebProxy` 与 `duck.apk` 重建网关；`laolaola278-dev/duck2api-pro` 的 5 个源码文件也已收录在 `gateways/duckpro/` 作为备用实现）。
+- 面板「启动」按钮或 `POST /api/groups/:id/start` 会按 `config.json` 的 `launch`（python 路径、脚本、参数、cwd、环境变量）直接拉起项目内 Python 子进程；若端口已有服务在跑则返回 `already:true`，不会重复启动。
+- 健康检查与模型目录仍走本地 OpenAI 兼容端口（18088 / 7749），逻辑与内置组一致。
+
+**凭证**：`gateways/deepseek-web/` 不含 `deepseek_token.txt` / `cookie_keys.txt` / `deepseek_device_id.txt`；用户提供 `DEEPSEEK_TOKEN` 环境变量即可。`gateways/duck/` 的挑战 token 运行时计算不落盘。详见 `gateways/README.md`。

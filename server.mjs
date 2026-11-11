@@ -197,13 +197,13 @@ const MODELS = [
 ];
 function resolve(m) {
   const hit = MODELS.find(x => x.id === m);
-  if (hit) { const g = GROUPS[hit.provider] || {}; return { group: hit.provider, up: hit.up, id: hit.id, builtin: g.type !== "openai", g }; }
+  if (hit) { const g = GROUPS[hit.provider] || {}; return { group: hit.provider, up: hit.up, id: hit.id, builtin: g.type === "builtin", g }; }
   const parts = String(m || "").split("/");
   const gid = parts[0], rest = parts.slice(1).join("/");
   const g = GROUPS[gid];
-  if (g && g.enabled) return { group: gid, up: rest, id: String(m), builtin: g.type !== "openai", g };
+  if (g && g.enabled) return { group: gid, up: rest, id: String(m), builtin: g.type === "builtin", g };
   const bare = MODELS.find(x => x.id.split("/")[1] === String(m));
-  if (bare) { const bg = GROUPS[bare.provider] || {}; return { group: bare.provider, up: bare.up, id: bare.id, builtin: bg.type !== "openai", g: bg }; }
+  if (bare) { const bg = GROUPS[bare.provider] || {}; return { group: bare.provider, up: bare.up, id: bare.id, builtin: bg.type === "builtin", g: bg }; }
   const d = MODELS.find(x => x.provider === (CFG.defaultProvider || "quark"));
   return { group: d.provider, up: d.up, id: d.id, builtin: true, g: GROUPS[d.provider] || {} };
 }
@@ -244,9 +244,24 @@ const server = http.createServer(async (req, res) => {
       if (!g) return fail(res, 404, "unknown group " + gid);
       if (act === "toggle") { g.enabled = !g.enabled; return json(res, 200, { group: gid, enabled: g.enabled }); }
       if (act === "start") {
-        if (!g.startCmd) return fail(res, 400, "no startCmd for " + gid);
-        try { spawn("cmd.exe", ["/c", "start", "", g.startCmd], { detached: true, stdio: "ignore" }).unref(); return json(res, 200, { started: gid, cmd: g.startCmd }); }
-        catch (e) { return fail(res, 500, e.message); }
+        const L = g.launch;
+        if (L && L.script) {
+          if (L.port) { try { const rr = await fetch("http://127.0.0.1:" + L.port + "/health", { signal: AbortSignal.timeout(1500) }); if (rr.ok) return json(res, 200, { already: true, group: gid, port: L.port }); } catch (e) {} }
+          const cwd = path.join(HERE, L.cwd || ".");
+          const env = Object.assign({}, process.env, L.env || {});
+          const python = L.python || process.env.BAI_PYTHON || "python";
+          try {
+            const ch = spawn(python, [path.join(cwd, L.script)].concat(L.args || []), { cwd, env, detached: true, stdio: "ignore", windowsHide: true });
+            ch.on("error", e => log("launch error " + gid + ": " + e.message));
+            ch.unref();
+            return json(res, 200, { started: gid, script: L.script, port: L.port || null, cwd: L.cwd });
+          } catch (e) { return fail(res, 500, e.message); }
+        }
+        if (g.startCmd) {
+          try { spawn("cmd.exe", ["/c", "start", "", g.startCmd], { detached: true, stdio: "ignore" }).unref(); return json(res, 200, { started: gid, cmd: g.startCmd }); }
+          catch (e) { return fail(res, 500, e.message); }
+        }
+        return fail(res, 400, "no launch/startCmd for " + gid);
       }
       return fail(res, 404, "unknown action");
     }

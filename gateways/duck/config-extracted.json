@@ -1,0 +1,39 @@
+{
+  "package": "dev.duck2api",
+  "appLabel": "Duck 网关",
+  "versionName": "1.0.4",
+  "versionCode": "5",
+  "minSdk": "28",
+  "targetSdk": "36",
+  "signature": "v2/v3 present",
+  "service": "dev.duck2api.service.GatewayService",
+  "listen": {
+    "bindAddress": "127.0.0.1",
+    "port": 7749,
+    "bindAddressAlternative": "0.0.0.0 (LAN toggle)"
+  },
+  "gatewayKey": "",
+  "upstreamBaseUrl": "https://duck.ai",
+  "defaultModel": "gpt-6-luna (when pref empty)",
+  "reasoningEffortAllowed": [
+    "none",
+    "low",
+    "medium"
+  ],
+  "reasoningEffortDefault": "none",
+  "challengeCacheMs": 1800000,
+  "modelCatalogCacheMs": 1800000,
+  "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+  "endpoints": [
+    "/",
+    "/health",
+    "/v1",
+    "/v1/models",
+    "/v1/chat/completions"
+  ],
+  "upstream": [
+    "/duckchat/v1/status",
+    "/duckchat/v1/chat",
+    "/duckchat/v1/models"
+  ]
+}

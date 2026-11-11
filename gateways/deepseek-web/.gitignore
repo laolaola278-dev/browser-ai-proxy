@@ -1,0 +1,28 @@
+# ---------------------------------------------------------------------------
+# This directory doubles as a reverse-engineering scratch workspace: it holds
+# browser-extracted credentials, captured SSE dumps and scraped DeepSeek JS
+# bundles. ONLY the files explicitly re-included below belong to the repo.
+# Do NOT remove the leading "/*" rule.
+# ---------------------------------------------------------------------------
+/*
+!.gitignore
+!README.md
+!ACCOUNT-BAN-RISK.md
+!requirements.txt
+!.env.example
+!start_proxy.py
+!MODIFIED_FILE.py
+!_pow_node.js
+!_desktop_start.py
+!_watch_deepseek_18088.py
+!_run_live_proxy_new.py
+!start_deepseek_18088.cmd
+!PATCH_NOTES-20261110.md
+
+# Credentials & runtime state -- belt and braces, never tracked.
+deepseek_token.txt
+deepseek_token*.txt
+deepseek_device_id.txt
+*.pid
+__pycache__/
+*.pyc

@@ -176,14 +176,14 @@ function renderGroups(){
     var g=S.groups[k]||{},on=!!g.enabled,live=!!g.live,exp=g.healthInfo&&g.healthInfo.token_status==='expired';
     var key=g.key?String(g.key).slice(0,4)+'…'+String(g.key).slice(-4):'无鉴权';
     h+='<div class="grp"><div class="line"><div class="ico">'+esc(k.slice(0,2).toUpperCase())+'</div>'+
-      '<div class="info"><div class="nm">'+esc(g.label||k)+' <span class="tag '+(g.type==='builtin'?'':'a')+'">'+esc(g.type||'group')+'</span>'+(exp?'<span class="tag r">token 过期</span>':'')+'</div>'+
+      '<div class="info"><div class="nm">'+esc(g.label||k)+' <span class="tag '+(g.type==='builtin'?'':'a')+'">'+(g.type==='builtin'?'内置':(g.type==='local'?'本地托管':esc(g.type||'group')))+'</span>'+(exp?'<span class="tag r">token 过期</span>':'')+'</div>'+
       '<div class="sub">'+esc(g.baseURL||g.endpoint||'')+' · '+(g.modelCount!=null?g.modelCount:(g.models||0))+' 个模型 · '+esc(g.note||'')+'</div></div>'+
       '<span class="pill">'+esc(key)+'</span>'+
       '<span><span class="st '+(live?'on':'off')+'"></span><span class="muted">'+(live?'在线':'离线')+'</span></span>'+
       '<div class="sw '+(on?'on':'')+'" onclick="toggleGroup(\''+k+'\')"></div>'+
       '<span class="arrow" onclick="detail(\''+k+'\')">⌄</span></div>'+
-      '<div class="detail" id="d-'+esc(k)+'">健康检查：'+esc(g.health||g.endpoint||'-')+' · 启动脚本：'+esc(g.startCmd||'内置')+
-      (g.startCmd?' <button class="btn" onclick="startGroup(\''+k+'\')">启动网关</button>':'')+
+      '<div class="detail" id="d-'+esc(k)+'">健康检查：'+esc(g.health||g.endpoint||'-')+' · 启动脚本：'+esc(g.startCmd||(g.launch?g.launch.script:'内置'))+
+      (g.startCmd||g.launch?' <button class="btn" onclick="startGroup(\''+k+'\')">启动网关</button>':'')+
       (exp?' · <span class="bad">上游登录态过期，需重新登录该网页版</span>':'')+'</div></div>';
   });
   $('groups').innerHTML=h||'<div class="muted">没有匹配的分组</div>';

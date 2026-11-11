@@ -1,0 +1,5 @@
+# Core proxy
+requests>=2.28
+
+# Windows background watchdog (_desktop_start.py) only
+psutil>=5.9; sys_platform == "win32"
